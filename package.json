@@ -9,6 +9,7 @@
     "default": "./bld/library/index.js"
   },
   "scripts": {
+    "prepublishOnly": "yarn build",
     "3": "yarn && yarn-deduplicate && yarn",
     "build": "rimraf ./bld && tsc --build",
     "lint": "eslint --no-error-on-unmatched-pattern . && run-in-every eslint-project --parallel --echo -- eslint --no-error-on-unmatched-pattern .",
