@@ -10,9 +10,7 @@
       },
       {
         "name": "test",
-        "references": [
-          "library"
-        ]
+        "references": ["library"]
       }
     ]
   }
