@@ -31,7 +31,9 @@ export interface DiwuServerOptions {
 /**
  * node 逻辑转换
  */
-export function diwuServer({outDir}: DiwuServerOptions = {}): PluginOption {
+export function diwuServer({
+  outDir = 'dist',
+}: DiwuServerOptions = {}): PluginOption {
   const diwuCachePath = Path.join(process.cwd(), 'node_modules/.diwu');
 
   return {
