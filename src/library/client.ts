@@ -20,6 +20,8 @@ export function diwuClient({
 }: DiwuClientOptions = {}): PluginOption {
   const diwuCachePath = Path.join(process.cwd(), 'node_modules/.diwu');
 
+  FSE.ensureDirSync(diwuCachePath);
+
   return {
     name: 'vite-plugin-diwu-client',
     enforce: 'pre',

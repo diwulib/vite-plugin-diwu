@@ -36,6 +36,8 @@ export function diwuServer({
 }: DiwuServerOptions = {}): PluginOption {
   const diwuCachePath = Path.join(process.cwd(), 'node_modules/.diwu');
 
+  FSE.ensureDirSync(diwuCachePath);
+
   return {
     name: 'vite-plugin-diwu-server',
     async transform(code, id) {
