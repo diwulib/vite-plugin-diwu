@@ -23,7 +23,7 @@ const DIWU_IMPORT_REG = new RegExp(`('|")${'diwu'}('|")`);
 
 export interface DiwuServerOptions {
   /**
-   * default: <root>dist
+   * default: <root>/dist
    */
   outDir?: string;
 }

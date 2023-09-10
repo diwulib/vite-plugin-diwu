@@ -16,7 +16,7 @@ export interface DiwuBuildOptions {
    */
   libEntry?: string;
   /**
-   * default: <root>dist
+   * default: <root>/dist
    */
   outDir?: string;
   external?: Record<
@@ -30,7 +30,7 @@ export function diwuBuild({
   outDir = 'dist',
   external,
 }: DiwuBuildOptions = {}): PluginOption {
-  const mergerdExternal = {...DEFAULT_EXTERNAL, ...external};
+  const mergedExternal = {...DEFAULT_EXTERNAL, ...external};
 
   return {
     name: 'vite-plugin-diwu-build',
@@ -49,9 +49,9 @@ export function diwuBuild({
       config.build.rollupOptions ||= {};
 
       Object.assign(config.build.rollupOptions, {
-        external: Object.keys(mergerdExternal),
+        external: Object.keys(mergedExternal),
         output: {
-          globals: external,
+          globals: mergedExternal,
         },
       });
 

@@ -7,7 +7,7 @@ import type {PluginOption} from 'vite';
 
 export interface DiwuClientOptions {
   /**
-   * default: <root>dist
+   * default: <root>/dist
    */
   outDir?: string;
 }
