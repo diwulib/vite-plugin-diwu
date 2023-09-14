@@ -1,6 +1,21 @@
 import Path from 'path';
 
 import FSE from 'fs-extra';
+import type {
+  BaseType,
+  Definition,
+  SubNodeParser,
+  SubTypeFormatter,
+  TypeFormatter,
+} from 'ts-json-schema-generator';
+import {
+  FunctionType,
+  SchemaGenerator,
+  StringType,
+  createFormatter,
+  createParser,
+  createProgram,
+} from 'ts-json-schema-generator';
 import * as ts from 'typescript';
 // @ts-expect-error
 import type {PluginOption} from 'vite';
@@ -10,6 +25,74 @@ export interface DiwuClientOptions {
    * default: <root>/dist
    */
   outDir?: string;
+}
+
+export class FunctionParamsTypeFormatter implements SubTypeFormatter {
+  supportsType(type: FunctionType): boolean {
+    return type instanceof FunctionType;
+  }
+
+  getDefinition(type: FunctionType): Definition {
+    // Return a custom schema for the function property.
+    return {
+      type: 'object',
+      properties: {
+        isFunction: {
+          type: 'boolean',
+          const: true,
+        },
+      },
+    };
+  }
+
+  getChildren(type: FunctionType): BaseType[] {
+    return [];
+  }
+}
+
+export class FunctionParamsParser {
+  constructor() {}
+
+  supportsNode(node: ts.Node): boolean {
+    if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
+      function checkInterface(): void {
+        const props = (node as ts.InterfaceDeclaration).members;
+        const output = props.find(
+          (node): node is ts.PropertySignature =>
+            node.kind === ts.SyntaxKind.PropertySignature &&
+            (node.name as ts.PrivateIdentifier)?.escapedText === 'output',
+        );
+
+        const outputParameters =
+          output?.type?.kind === ts.SyntaxKind.FunctionType
+            ? (output.type as ts.FunctionTypeNode).parameters
+            : [];
+
+        if (outputParameters.length === 0) {
+          // output 不能为空
+          return;
+        }
+
+        if (outputParameters.length > 1) {
+          // output 只会有第一个参数生效
+          // return;
+        }
+
+        const [outputParameter] = outputParameters;
+
+        console.log(ts.SyntaxKind[outputParameter.type?.kind!]);
+      }
+
+      checkInterface();
+      // console.log(node?.name);
+    }
+
+    return false;
+  }
+
+  createType(node: ts.Node): BaseType {
+    return new StringType();
+  }
 }
 
 /**
@@ -28,6 +111,33 @@ export function diwuClient({
     async transform(source, id) {
       if (id.includes('node_modules')) {
         return;
+      }
+
+      if (id.includes('porter/component')) {
+        const config = {
+          path: id,
+          tsconfig: Path.join(__dirname, '../../tsconfig.component.json'),
+          type: '*',
+        };
+
+        const formatter = createFormatter(config, fmt => {
+          fmt.addTypeFormatter(new FunctionParamsTypeFormatter());
+        });
+
+        const program = createProgram(config);
+        const parser = createParser(program, config, prs => {
+          prs.addNodeParser(new FunctionParamsParser());
+        });
+        const generator = new SchemaGenerator(
+          program,
+          parser,
+          formatter,
+          config,
+        );
+        const schema = generator.createSchema(config.type);
+
+        // @ts-ignore 112
+        console.log(schema.definitions?.PorterProps?.properties);
       }
 
       const sourceFile = ts.createSourceFile(
