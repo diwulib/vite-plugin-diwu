@@ -4,14 +4,12 @@ import FSE from 'fs-extra';
 import type {
   BaseType,
   Definition,
-  SubNodeParser,
+  NodeParser,
   SubTypeFormatter,
-  TypeFormatter,
 } from 'ts-json-schema-generator';
 import {
   FunctionType,
   SchemaGenerator,
-  StringType,
   createFormatter,
   createParser,
   createProgram,
@@ -19,6 +17,8 @@ import {
 import * as ts from 'typescript';
 // @ts-expect-error
 import type {PluginOption} from 'vite';
+
+import {OutputParser} from './parser';
 
 export interface DiwuClientOptions {
   /**
@@ -50,51 +50,6 @@ export class FunctionParamsTypeFormatter implements SubTypeFormatter {
   }
 }
 
-export class FunctionParamsParser {
-  constructor() {}
-
-  supportsNode(node: ts.Node): boolean {
-    if (node.kind === ts.SyntaxKind.InterfaceDeclaration) {
-      function checkInterface(): void {
-        const props = (node as ts.InterfaceDeclaration).members;
-        const output = props.find(
-          (node): node is ts.PropertySignature =>
-            node.kind === ts.SyntaxKind.PropertySignature &&
-            (node.name as ts.PrivateIdentifier)?.escapedText === 'output',
-        );
-
-        const outputParameters =
-          output?.type?.kind === ts.SyntaxKind.FunctionType
-            ? (output.type as ts.FunctionTypeNode).parameters
-            : [];
-
-        if (outputParameters.length === 0) {
-          // output 不能为空
-          return;
-        }
-
-        if (outputParameters.length > 1) {
-          // output 只会有第一个参数生效
-          // return;
-        }
-
-        const [outputParameter] = outputParameters;
-
-        console.log(ts.SyntaxKind[outputParameter.type?.kind!]);
-      }
-
-      checkInterface();
-      // console.log(node?.name);
-    }
-
-    return false;
-  }
-
-  createType(node: ts.Node): BaseType {
-    return new StringType();
-  }
-}
-
 /**
  * 组件信息收集
  */
@@ -116,7 +71,7 @@ export function diwuClient({
       if (id.includes('porter/component')) {
         const config = {
           path: id,
-          tsconfig: Path.join(__dirname, '../../tsconfig.component.json'),
+          tsconfig: Path.join(__dirname, '../../../tsconfig.component.json'),
           type: '*',
         };
 
@@ -125,8 +80,10 @@ export function diwuClient({
         });
 
         const program = createProgram(config);
-        const parser = createParser(program, config, prs => {
-          prs.addNodeParser(new FunctionParamsParser());
+        const parser = createParser(program, config, parser => {
+          parser.addNodeParser(
+            new OutputParser(parser as unknown as NodeParser),
+          );
         });
         const generator = new SchemaGenerator(
           program,
