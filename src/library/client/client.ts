@@ -4,7 +4,6 @@ import FSE from 'fs-extra';
 import type {
   BaseType,
   Definition,
-  NodeParser,
   SubTypeFormatter,
 } from 'ts-json-schema-generator';
 import {
@@ -18,7 +17,7 @@ import * as ts from 'typescript';
 // @ts-expect-error
 import type {PluginOption} from 'vite';
 
-import {OutputParser} from './parser';
+import {createPropsParse} from './parser';
 
 export interface DiwuClientOptions {
   /**
@@ -80,11 +79,13 @@ export function diwuClient({
         });
 
         const program = createProgram(config);
-        const parser = createParser(program, config, parser => {
-          parser.addNodeParser(
-            new OutputParser(parser as unknown as NodeParser),
+
+        const parser = createParser(program, config, chainNodeParser => {
+          chainNodeParser.addNodeParser(
+            createPropsParse(program, chainNodeParser),
           );
         });
+
         const generator = new SchemaGenerator(
           program,
           parser,
