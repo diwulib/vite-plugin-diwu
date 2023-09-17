@@ -20,12 +20,26 @@ import * as ts from 'typescript';
 
 import {OutputParser} from './output';
 
+function withJsDoc(
+  typeChecker: ts.TypeChecker,
+  nodeParser: SubNodeParser,
+): SubNodeParser {
+  return new AnnotatedNodeParser(
+    nodeParser,
+    new ExtendedAnnotationsReader(typeChecker, new Set()),
+  );
+}
+
 export class PropsParse extends InterfaceAndClassNodeParser {
-  outputParser: OutputParser;
+  outputParser: SubNodeParser;
 
   constructor(typeChecker: ts.TypeChecker, childNodeParser: NodeParser) {
     super(typeChecker, childNodeParser, false);
-    this.outputParser = new OutputParser(childNodeParser);
+
+    this.outputParser = withJsDoc(
+      typeChecker,
+      new OutputParser(childNodeParser),
+    );
   }
 
   // fork super.getProperties
@@ -143,20 +157,14 @@ export function createPropsParse(
 ): SubNodeParser {
   const typeChecker = program.getTypeChecker();
 
-  function withJsDoc(nodeParser: SubNodeParser): SubNodeParser {
-    return new AnnotatedNodeParser(
-      nodeParser,
-      new ExtendedAnnotationsReader(typeChecker, new Set()),
-    );
-  }
-
   return new CircularReferenceNodeParser(
     new ExposeNodeParser(
       typeChecker,
       withJsDoc(
+        typeChecker,
         new PropsParse(
           typeChecker,
-          withJsDoc(chainNodeParser as unknown as SubNodeParser),
+          withJsDoc(typeChecker, chainNodeParser as unknown as SubNodeParser),
         ),
       ),
       'export',
