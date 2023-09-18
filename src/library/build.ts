@@ -1,37 +1,14 @@
-import Path from 'path';
-
 import type {ModuleFormat} from 'rollup';
 // @ts-expect-error
 import type {PluginOption} from 'vite';
 
-const DEFAULT_EXTERNAL = {
-  react: 'React',
-  'react/jsx-runtime': 'JSXRuntime',
-  '@douyinfe/semi-ui': 'SemiUI',
-};
-
-export interface DiwuBuildOptions {
-  /**
-   * default: <root>/src/components/index.ts
-   */
-  libEntry?: string;
-  /**
-   * default: <root>/dist
-   */
-  outDir?: string;
-  external?: Record<
-    {packageName: string}['packageName'],
-    {globalVar: string}['globalVar']
-  >;
-}
+import type {DiwuConfig} from './config';
 
 export function diwuBuild({
-  libEntry = Path.join(process.cwd(), 'src/components/index.ts'),
-  outDir = 'dist',
+  libEntry,
+  outDir,
   external,
-}: DiwuBuildOptions = {}): PluginOption {
-  const mergedExternal = {...DEFAULT_EXTERNAL, ...external};
-
+}: DiwuConfig): PluginOption {
   return {
     name: 'vite-plugin-diwu-build',
     config(config) {
@@ -49,9 +26,9 @@ export function diwuBuild({
       config.build.rollupOptions ||= {};
 
       Object.assign(config.build.rollupOptions, {
-        external: Object.keys(mergedExternal),
+        external: Object.keys(external),
         output: {
-          globals: mergedExternal,
+          globals: external,
         },
       });
 

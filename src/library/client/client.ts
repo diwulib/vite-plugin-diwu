@@ -3,6 +3,7 @@ import Path from 'path';
 import FSE from 'fs-extra';
 import type {
   BaseType,
+  Config,
   Definition,
   SubTypeFormatter,
 } from 'ts-json-schema-generator';
@@ -17,14 +18,8 @@ import * as ts from 'typescript';
 // @ts-expect-error
 import type {PluginOption} from 'vite';
 
+import {DiwuConfig} from '../config';
 import {createPropsParse} from './parser';
-
-export interface DiwuClientOptions {
-  /**
-   * default: <root>/dist
-   */
-  outDir?: string;
-}
 
 export class FunctionParamsTypeFormatter implements SubTypeFormatter {
   supportsType(type: FunctionType): boolean {
@@ -52,10 +47,8 @@ export class FunctionParamsTypeFormatter implements SubTypeFormatter {
 /**
  * 组件信息收集
  */
-export function diwuClient({
-  outDir = 'dist',
-}: DiwuClientOptions = {}): PluginOption {
-  const diwuCachePath = Path.join(process.cwd(), 'node_modules/.diwu');
+export function diwuClient({outDir}: DiwuConfig): PluginOption {
+  const diwuCachePath = Path.resolve('node_modules/.diwu');
 
   FSE.ensureDirSync(diwuCachePath);
 
@@ -65,37 +58,6 @@ export function diwuClient({
     async transform(source, id) {
       if (id.includes('node_modules')) {
         return;
-      }
-
-      if (id.includes('porter/component')) {
-        const config = {
-          path: id,
-          tsconfig: Path.join(__dirname, '../../../tsconfig.component.json'),
-          type: '*',
-        };
-
-        const formatter = createFormatter(config, fmt => {
-          fmt.addTypeFormatter(new FunctionParamsTypeFormatter());
-        });
-
-        const program = createProgram(config);
-
-        const parser = createParser(program, config, chainNodeParser => {
-          chainNodeParser.addNodeParser(
-            createPropsParse(program, chainNodeParser),
-          );
-        });
-
-        const generator = new SchemaGenerator(
-          program,
-          parser,
-          formatter,
-          config,
-        );
-        const schema = generator.createSchema(config.type);
-
-        // @ts-ignore 112
-        console.log(schema.definitions?.PorterProps?.properties);
       }
 
       const sourceFile = ts.createSourceFile(
@@ -176,7 +138,7 @@ export function diwuClient({
         return;
       }
 
-      const fileName = Path.join(process.cwd(), `${outDir}/lib.es.js`);
+      const fileName = Path.resolve(`${outDir}/lib.es.js`);
       const sourceFile = ts.createSourceFile(
         fileName,
         FSE.readFileSync(fileName).toString(),
@@ -222,7 +184,7 @@ export function diwuClient({
       }
 
       await FSE.writeJSON(
-        Path.join(process.cwd(), `${outDir}/components.json`),
+        Path.resolve(`${outDir}/components.json`),
         exportVariables.reduce<Record<string, Component>>((dict, name) => {
           dict[name] = components[name] || {};
           return dict;

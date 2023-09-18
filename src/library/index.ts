@@ -1,19 +1,18 @@
 // @ts-expect-error
 import type {PluginOption} from 'vite';
 
-import {diwuBuild, type DiwuBuildOptions} from './build';
-import {diwuClient, type DiwuClientOptions} from './client';
-import {diwuServer, type DiwuServerOptions} from './server';
+import type {DiwuConfig} from './config';
+import {resolveConfig} from './config';
+import {diwuBuild} from './build';
+import {diwuClient} from './client';
+import {diwuServer} from './server';
 
 export * from './build';
 export * from './client';
 export * from './server';
+export * from './config';
 
-export interface DiwuOptions
-  extends DiwuClientOptions,
-    DiwuServerOptions,
-    DiwuBuildOptions {}
-
-export default function diwu(options: DiwuOptions = {}): PluginOption {
-  return [diwuClient(options), diwuServer(options), diwuBuild(options)];
+export default function diwu(override?: Partial<DiwuConfig>): PluginOption {
+  const config = resolveConfig(override);
+  return [diwuClient(config), diwuServer(config), diwuBuild(config)];
 }

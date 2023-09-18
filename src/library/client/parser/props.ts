@@ -42,6 +42,17 @@ export class PropsParse extends InterfaceAndClassNodeParser {
     );
   }
 
+  override supportsNode(
+    node: ts.InterfaceDeclaration | ts.ClassDeclaration,
+  ): boolean {
+    return (
+      node.kind === ts.SyntaxKind.InterfaceDeclaration &&
+      (node as ts.InterfaceDeclaration).name.escapedText
+        .toString()
+        .endsWith('Props')
+    );
+  }
+
   // fork super.getProperties
   override getProperties(
     node: ts.InterfaceDeclaration | ts.ClassDeclaration,

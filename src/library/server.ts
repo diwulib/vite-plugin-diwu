@@ -19,22 +19,15 @@ import type {
   // eslint-disable-next-line @mufan/reference-missing-proof
 } from 'estree';
 
-const DIWU_IMPORT_REG = new RegExp(`('|")${'diwu'}('|")`);
+import type {DiwuConfig} from './config';
 
-export interface DiwuServerOptions {
-  /**
-   * default: <root>/dist
-   */
-  outDir?: string;
-}
+const DIWU_IMPORT_REG = new RegExp(`('|")${'diwu'}('|")`);
 
 /**
  * node 逻辑转换
  */
-export function diwuServer({
-  outDir = 'dist',
-}: DiwuServerOptions = {}): PluginOption {
-  const diwuCachePath = Path.join(process.cwd(), 'node_modules/.diwu');
+export function diwuServer({outDir}: DiwuConfig): PluginOption {
+  const diwuCachePath = Path.resolve('node_modules/.diwu');
 
   FSE.ensureDirSync(diwuCachePath);
 
@@ -251,7 +244,7 @@ export function diwuServer({
 
       await FSE.copy(
         Path.join(diwuCachePath, 'scripts'),
-        Path.join(process.cwd(), `${outDir}/scripts`),
+        Path.resolve(`${outDir}/scripts`),
       );
     },
   };
