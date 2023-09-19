@@ -47,7 +47,11 @@ export class FunctionParamsTypeFormatter implements SubTypeFormatter {
 /**
  * 组件信息收集
  */
-export function diwuClient({outDir}: DiwuConfig): PluginOption {
+export function diwuClient({
+  libEntry,
+  outDir,
+  tsconfig,
+}: DiwuConfig): PluginOption {
   const diwuCachePath = Path.resolve('node_modules/.diwu');
 
   FSE.ensureDirSync(diwuCachePath);
@@ -173,7 +177,7 @@ export function diwuClient({outDir}: DiwuConfig): PluginOption {
 
       const componentsPath = Path.join(diwuCachePath, 'components.json');
 
-      type Component = unknown;
+      type Component = any;
 
       let components: Record<string, Component>;
 
@@ -183,10 +187,35 @@ export function diwuClient({outDir}: DiwuConfig): PluginOption {
         components = {};
       }
 
+      const config: Config = {
+        path: libEntry,
+        tsconfig,
+        type: '*',
+        topRef: false,
+      };
+
+      const formatter = createFormatter(config, fmt => {
+        fmt.addTypeFormatter(new FunctionParamsTypeFormatter());
+      });
+
+      const program = createProgram(config);
+
+      const parser = createParser(program, config, chainNodeParser => {
+        chainNodeParser.addNodeParser(
+          createPropsParse(program, chainNodeParser),
+        );
+      });
+
+      const generator = new SchemaGenerator(program, parser, formatter, config);
+
       await FSE.writeJSON(
         Path.resolve(`${outDir}/components.json`),
         exportVariables.reduce<Record<string, Component>>((dict, name) => {
           dict[name] = components[name] || {};
+
+          try {
+            dict[name].schema = generator.createSchema(`${name}Props`);
+          } catch (error) {}
           return dict;
         }, {}),
       );
